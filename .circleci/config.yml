@@ -5,7 +5,7 @@ jobs:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
       - image: circleci/golang:1.8
 
-    working_directory: /go/src/github.com/DharmaOfCode/tenago
+    working_directory: ~/go/src/github.com/DharmaOfCode/tenago
 
     steps:
       # Normally, this step would be in a custom primary image;
