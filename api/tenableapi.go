@@ -79,7 +79,6 @@ func (c *Client) AssetVulnerabilityInfo(assetId string, vulnId string) (*AssetVu
 
 func (c *Client) ListAssetVulnerabilities(id string) (*AssetVulnerabilitiesList, error) {
 	path := "/workbenches/assets/" + id + "/vulnerabilities"
-	fmt.Println("ONE!")
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
@@ -96,6 +95,67 @@ func (c *Client) ListAssetVulnerabilities(id string) (*AssetVulnerabilitiesList,
 		return nil, err
 	}
 	return &assetVulnerabilitiesList, err
+}
+
+func (c *Client) ListScans() (*ScansList, error) {
+	path := "/scans"
+	req, err := c.newRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	var scansList ScansList
+	err = json.Unmarshal(result, &scansList)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &scansList, err
+}
+
+func (c *Client) ScanDetails(id string) (*ScanDetails, error) {
+	path := "/scans/" + id
+	req, err := c.newRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	var scanDetails ScanDetails
+	err = json.Unmarshal(result, &scanDetails)
+
+	if err != nil {
+		return nil, err
+	}
+	return &scanDetails, err
+}
+
+func (c *Client) ScanDetailsWithChannel(id string, ch chan <- *ScanDetails) {
+	path := "/scans/" + id
+	req, err := c.newRequest("GET", path, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result, err := c.do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var scanDetails ScanDetails
+	err = json.Unmarshal(result, &scanDetails)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	ch <- &scanDetails
 }
 
 func (c *Client) ListAssets() (*AssetsList, error) {

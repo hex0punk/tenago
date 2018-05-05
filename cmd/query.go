@@ -7,15 +7,18 @@ import (
 	"github.com/spf13/cobra"
 	"errors"
 	"github.com/DharmaOfCode/tenago/util"
+	"github.com/DharmaOfCode/tenago/api"
 )
 
 type QueryState struct {
 	Assets		bool
 	Targets		bool
+	Scans		bool
 
 	IP			string
 	Hostname	string
 	TargetGroup string
+	ScanName	string
 }
 
 var (
@@ -26,7 +29,7 @@ var (
 		Short: "Queries assets, scans, target groups and vulnerabilities.",
 		Long:  `Queries assets, scans, target groups and vulnerabilities.`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if !queryState.Targets && !queryState.Assets{
+			if !queryState.Targets && !queryState.Assets && !queryState.Scans{
 				return errors.New("you need to tell me what to query (target groups or assets)")
 			}
 			return nil
@@ -41,9 +44,11 @@ func init(){
 	queryCmd.Flags().StringVar(&queryState.IP, "ip", "", "the IP address to use in the search")
 	queryCmd.Flags().StringVar(&queryState.Hostname, "hostname", "", "The hostname to use in a search")
 	queryCmd.Flags().StringVar(&queryState.TargetGroup, "target", "", "The target group to search by")
+	queryCmd.Flags().StringVar(&queryState.ScanName, "scan", "", "The scan name to search by")
 
 	queryCmd.Flags().BoolVarP(&queryState.Assets, "query assets", "A", false, "Search assets")
 	queryCmd.Flags().BoolVarP(&queryState.Targets, "query target groups", "T", false, "Search target groups")
+	queryCmd.Flags().BoolVarP(&queryState.Scans, "query scans", "S", false, "Search scans by name or hostname")
 
 	rootCmd.AddCommand(queryCmd)
 }
@@ -51,8 +56,8 @@ func init(){
 
 func runQuery(cmd *cobra.Command, args []string){
 	valid := true
-	if queryState.IP == "" && queryState.Hostname == "" && queryState.TargetGroup == "" {
-		fmt.Println("[!] You must specifiy a value for either a target or asset")
+	if queryState.IP == "" && queryState.Hostname == "" && queryState.TargetGroup == "" && queryState.ScanName == "" {
+		fmt.Println("[!] You must specifiy a value for either a target group, scan or asset")
 		valid = false
 	}
 
@@ -80,6 +85,10 @@ func processQuery(s *QueryState){
 		result = queryAssets(s)
 	}
 
+	if s.Scans  {
+		result = queryScans(s)
+	}
+
 	if s.Assets && (s.IP == "" && s.Hostname == "" && s.TargetGroup == ""){
 		result = getAllAssets(s)
 	}
@@ -91,9 +100,64 @@ func processQuery(s *QueryState){
 	util.PrintResult(Verbose, result)
 }
 
+func queryScans(s *QueryState) *util.ResultTable{
+	scansList, err := Client.ListScans()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	columns := []string{"Scan Name", "Targets"}
+	resultTable := util.ResultTable{
+		Columns: columns,
+	}
+
+	ch := make(chan *api.ScanDetails, 10)
+	for _, scan := range scansList.Scans{
+		if s.ScanName != "" {
+			lName := strings.ToLower(scan.Name)
+			lTerm := strings.ToLower(s.ScanName)
+
+			if strings.Contains(lName, lTerm) {
+				if Verbose{
+					fmt.Println("[+]	Getting details for scan " + scan.Name)
+				}
+				info, err := Client.ScanDetails(string(scan.Id))
+				if err != nil {
+					log.Fatal(err)
+				}
+				row := []string{scan.Name, info.ScanInfo.Targets}
+				resultTable.Rows = append(resultTable.Rows, row)
+			}
+		} else {
+			if Verbose{
+				fmt.Println("[+]	Getting details for scan " + scan.Name)
+			}
+			go Client.ScanDetailsWithChannel(string(scan.Id), ch)
+			if err != nil {
+				log.Fatal(err)
+			}
+			info := <-ch
+			targetsArray := strings.Split(info.ScanInfo.Targets, ",")
+			if s.IP != ""{
+				if contains(targetsArray, s.IP){
+					row := []string{scan.Name, info.ScanInfo.Targets}
+					resultTable.Rows = append(resultTable.Rows, row)
+				}
+			}
+			if s.Hostname != ""{
+				if contains(targetsArray, s.Hostname){
+					row := []string{scan.Name, info.ScanInfo.Targets}
+					resultTable.Rows = append(resultTable.Rows, row)
+				}
+			}
+		}
+	}
+
+	return &resultTable
+}
+
 func queryTargets(s *QueryState) *util.ResultTable{
 	targetGroupsList, err := Client.ListTargetGroups()
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +170,10 @@ func queryTargets(s *QueryState) *util.ResultTable{
 	for _, t := range targetGroupsList.TargetGroups{
 		membersArray := strings.Split(t.Members, ",")
 		if s.TargetGroup != ""{
-			if strings.ToLower(t.Name) == strings.ToLower(s.TargetGroup) {
+			lName := strings.ToLower(t.Name)
+			lTerm := strings.ToLower(s.TargetGroup)
+
+			if strings.Contains(lName, lTerm) {
 				row := []string{t.Name, t.Members}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
