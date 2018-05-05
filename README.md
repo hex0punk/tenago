@@ -35,6 +35,14 @@ Use "tenago [command] --help" for more information about a command.
 
 C:\Users\auseche\go\src\github.com\DharmaOfCode\tenago (master -> origin)
 ```
+## Getting Started
+Download the binaries from the release page and run. You will need to have a file called `config.yml` in the folder where you have tenago. The file must include the access key and API key for your Tenable.go license. You can copy and paste the below in your `config.yml` file and replace each value accordingly.
+
+```
+credentials:
+        accessKey: "YourAccessKeyHere"
+        secretKey: "YourSecretKeyHere"
+```
 
 ## Examples
 
