@@ -13,3 +13,6 @@
 
 # Config file with secrets
 config.yml
+
+# Except config for circleci
+!/.circleci/config.yml
