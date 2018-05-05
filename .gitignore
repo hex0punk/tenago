@@ -14,5 +14,8 @@
 # Config file with secrets
 config.yml
 
+# Dists
+dist/
+
 # Except config for circleci
 !/.circleci/config.yml
