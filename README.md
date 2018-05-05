@@ -4,7 +4,7 @@ A Go API client and command line tool for Tenable.io
 ## Why?
 
 1) To learn and practice Go
-2) There a multiple questions that I cannot answer using the Tenable.io GUI alone. Because of that, this projects consists not just of the API but a command utility that allows users to perform multiple queries that, with the interface alone, would require multiple manual steps. 
+2) There a multiple questions that I cannot answer using the Tenable.io GUI alone. Because of that, this projects consists not just of the API alone but also a command utility that allows users to perform multiple queries that, with the UI interface alone, would require multiple manual steps. 
 
 ## Usage
 Run the application without argument or use the `-h` flag to get usage information.
