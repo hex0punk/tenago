@@ -1,6 +1,8 @@
 package util
 
-import "github.com/DharmaOfCode/tenago/api"
+import (
+	"github.com/DharmaOfCode/tenago/api"
+)
 
 type ResultTable struct {
 	Rows			[][]string
@@ -22,3 +24,4 @@ type AuditedAsset struct{
 	Vulnerabilities[]   api.AssetVulnerability
 	TotalRiskScore		float64
 }
+

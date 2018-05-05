@@ -1,6 +1,8 @@
 package api
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 //https://cloud.tenable.com/api#/resources/assets
 type Asset struct {
@@ -94,3 +96,52 @@ type RiskInformation struct {
 	CVSS3TemporalScore	string 		`json:"cvss3_temporal_score"`
 	StigSeverity		string 		`json:"stig_severity"`
 }
+
+type ScansList struct {
+	Scans[] 		Scan 		`json:"scans"`
+	ScanFolders[]	ScanFolder	`json:"folders"`
+}
+
+type Scan struct {
+	Legacy					ConvertibleBoolean	`json:"legacy"`
+	Permissions 			json.Number				`json:"permissions"`
+	Type 					string					`json:"type"`
+	Read 					ConvertibleBoolean	`json:"read"`
+	LastModificationDate 	json.Number				`json:"last_modification_date"`
+	CreationDate			json.Number				`json:"creation_date"`
+	Status					string					`json:"status"`
+	UUID 					string					`json:"uuid"`
+	Shared 					ConvertibleBoolean	`json:"shared"`
+	UserPermissions 		json.Number				`json:"user_permissions"`
+	Owner 					string					`json:"owner"`
+	ScheduledUUID			string					`json:"schedule_uuid"`
+	TimeZone 				string					`json:"timezone"`
+	Rrules					string					`json:"rrules"`
+	StartTime				string					`json:"starttime"`
+	Enabled 				ConvertibleBoolean	`json:"enabled"`
+	Control 				ConvertibleBoolean	`json:"control"`
+	Name					string					`json:"name"`
+	Id						json.Number				`json:"id"`
+}
+
+type ScanFolder struct{
+	UnreadCount		json.Number	`json:"unread_count"`
+	Custom			json.Number	`json:"custom"`
+	DefaultTag		json.Number	`json:"default_tag"`
+	Type			string		`json:"id"`
+	Name			string		`json:"name"`
+	Id				json.Number	`json:"id"`
+}
+
+type ScanDetails struct{
+	ScanInfo	ScanInfo `json:"info"`
+}
+
+//TODO: Add the rest of the properties
+type ScanInfo struct{
+	Name		string 		`json:"name"`
+	HostCount	json.Number	`json:"hostcount"`
+	Targets		string		`json:"targets"`
+}
+
+
