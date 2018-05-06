@@ -111,15 +111,16 @@ func queryScans(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-	ch := make(chan *api.ScanDetails, 10)
-	for _, scan := range scansList.Scans{
+
+	ch := make(chan *api.ScanDetails)
+	for _, scan := range scansList.Scans {
 		if s.ScanName != "" {
 			lName := strings.ToLower(scan.Name)
 			lTerm := strings.ToLower(s.ScanName)
 
 			if strings.Contains(lName, lTerm) {
 				if Verbose{
-					fmt.Println("[+]	Getting details for scan " + scan.Name)
+					fmt.Println("[+] Getting details for scan " + scan.Name)
 				}
 				info, err := Client.ScanDetails(string(scan.Id))
 				if err != nil {
@@ -130,25 +131,28 @@ func queryScans(s *QueryState) *util.ResultTable{
 			}
 		} else {
 			if Verbose{
-				fmt.Println("[+]	Getting details for scan " + scan.Name)
+				fmt.Println("[+] Getting details for scan " + scan.Name)
 			}
 			go Client.ScanDetailsWithChannel(string(scan.Id), ch)
-			if err != nil {
-				log.Fatal(err)
+		}
+	}
+
+	for range scansList.Scans {
+		info := <-ch
+		if Verbose{
+			fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
+		}
+		targetsArray := strings.Split(info.ScanInfo.Targets, ",")
+		if s.IP != ""{
+			if contains(targetsArray, s.IP){
+				row := []string{info.ScanInfo.Name, info.ScanInfo.Targets}
+				resultTable.Rows = append(resultTable.Rows, row)
 			}
-			info := <-ch
-			targetsArray := strings.Split(info.ScanInfo.Targets, ",")
-			if s.IP != ""{
-				if contains(targetsArray, s.IP){
-					row := []string{scan.Name, info.ScanInfo.Targets}
-					resultTable.Rows = append(resultTable.Rows, row)
-				}
-			}
-			if s.Hostname != ""{
-				if contains(targetsArray, s.Hostname){
-					row := []string{scan.Name, info.ScanInfo.Targets}
-					resultTable.Rows = append(resultTable.Rows, row)
-				}
+		}
+		if s.Hostname != ""{
+			if contains(targetsArray, s.Hostname){
+				row := []string{info.ScanInfo.Name, info.ScanInfo.Targets}
+				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
 	}

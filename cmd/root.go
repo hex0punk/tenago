@@ -6,6 +6,7 @@ import (
 	"os"
 	"github.com/spf13/viper"
 	"log"
+	"runtime"
 	"errors"
 	"github.com/DharmaOfCode/tenago/api"
 	"github.com/DharmaOfCode/tenago/util"
@@ -13,6 +14,7 @@ import (
 
 var (
 	Verbose bool
+	Threads int
 	cfgFile string
 	Client *api.Client
 	config *util.Configuration
@@ -30,6 +32,10 @@ var (
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			err := viper.Unmarshal(&config)
+			if Verbose{
+				fmt.Printf("[+] Setting the application to %d threads\n", Threads)
+			}
+			runtime.GOMAXPROCS(Threads)
 			if err != nil {
 				log.Fatalf("unable to decode into struct, %v", err)
 				os.Exit(1)
@@ -44,6 +50,7 @@ func init(){
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the base folder where tenago is located)")
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().IntVarP(&Threads, "number of threads", "t", 10, "Number of threads (defaults to 10)")
 }
 
 func initConfig(){
