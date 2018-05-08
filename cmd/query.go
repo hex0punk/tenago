@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/DharmaOfCode/tenago/util"
 	"github.com/DharmaOfCode/tenago/api"
+	"time"
 )
 
 type QueryState struct {
@@ -101,6 +102,7 @@ func processQuery(s *QueryState){
 }
 
 func queryScans(s *QueryState) *util.ResultTable{
+	start := time.Now()
 	scansList, err := Client.ListScans()
 	if err != nil {
 		log.Fatal(err)
@@ -139,9 +141,9 @@ func queryScans(s *QueryState) *util.ResultTable{
 
 	for range scansList.Scans {
 		info := <-ch
-		if Verbose{
-			fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
-		}
+		//if Verbose{
+		//	fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
+		//}
 		targetsArray := strings.Split(info.ScanInfo.Targets, ",")
 		if s.IP != ""{
 			if contains(targetsArray, s.IP){
@@ -155,6 +157,11 @@ func queryScans(s *QueryState) *util.ResultTable{
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
+	}
+
+	if Verbose{
+		util.PrintRuler(Verbose)
+		fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 	}
 
 	return &resultTable
