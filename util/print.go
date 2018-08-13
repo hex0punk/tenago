@@ -40,6 +40,12 @@ func PrintResult(verbose bool, result *ResultTable){
 
 	table.AppendBulk(result.Rows)
 	table.Render()
+
+	if (verbose){
+		PrintRuler(true)
+		fmt.Printf("Total records: %d\n", len(result.Rows))
+		PrintRuler(true)
+	}
 }
 
 func PrintBanner(verbose bool) {

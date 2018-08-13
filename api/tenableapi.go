@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"strconv"
 )
 
 const baseURL string = "https://cloud.tenable.com/"
@@ -28,11 +29,10 @@ func NewClient(httpClient *http.Client, accessKey string, secretKey string) *Cli
 
 	return &Client{
 		httpClient: httpClient,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
+		AccessKey:  accessKey,
+		SecretKey:  secretKey,
 	}
 }
-
 
 func (c *Client) AssetInfo(id string) (*AssetInfo, error) {
 	fmt.Println("THREE!")
@@ -55,9 +55,64 @@ func (c *Client) AssetInfo(id string) (*AssetInfo, error) {
 	return &assetInfo, err
 }
 
+func (c *Client) ListVulnerabilities(days int)(*VulnerabilitiesList, error) {
+	path := "/workbenches/vulnerabilities/"
+	req, err := c.newRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Add("date_range", strconv.Itoa(days))
+	req.URL.RawQuery = q.Encode()
+
+	result, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	var assetVulnerabilitiesList VulnerabilitiesList
+	err = json.Unmarshal(result, &assetVulnerabilitiesList)
+
+	if err != nil {
+		return nil, err
+	}
+	return &assetVulnerabilitiesList, err
+}
+
+func (c *Client) ListVulnerabilitiesBySeverity(severity Severity, state string, days int)(*VulnerabilitiesList, error) {
+	path := "/workbenches/vulnerabilities"
+	req, err := c.newRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	q.Add("severity", severity.String())
+	q.Add("date_range", strconv.Itoa(days))
+
+	if (state != ""){
+		q.Add("filter.1.quality", "eq")
+		q.Add("filter.1.filter", "tracking.state")
+		q.Add("filter.1.value", state)
+	}
+
+	req.URL.RawQuery = q.Encode()
+	fmt.Println(req.URL)
+	result, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	var assetVulnerabilitiesList VulnerabilitiesList
+	err = json.Unmarshal(result, &assetVulnerabilitiesList)
+
+	if err != nil {
+		return nil, err
+	}
+	return &assetVulnerabilitiesList, err
+}
+
 func (c *Client) AssetVulnerabilityInfo(assetId string, vulnId string) (*AssetVulnerabilityInfo, error) {
-	fmt.Println("TWO!")
-	path := "/workbenches/assets/" + assetId + "/vulnerabilities/" + vulnId +  "/info"
+	path := "/workbenches/assets/" + assetId + "/vulnerabilities/" + vulnId + "/info"
 	fmt.Println(path)
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
@@ -77,7 +132,7 @@ func (c *Client) AssetVulnerabilityInfo(assetId string, vulnId string) (*AssetVu
 	return &assetVulnerabilityInfo, err
 }
 
-func (c *Client) ListAssetVulnerabilities(id string) (*AssetVulnerabilitiesList, error) {
+func (c *Client) ListAssetVulnerabilities(id string) (*VulnerabilitiesList, error) {
 	path := "/workbenches/assets/" + id + "/vulnerabilities"
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
@@ -88,7 +143,7 @@ func (c *Client) ListAssetVulnerabilities(id string) (*AssetVulnerabilitiesList,
 	if err != nil {
 		return nil, err
 	}
-	var assetVulnerabilitiesList AssetVulnerabilitiesList
+	var assetVulnerabilitiesList VulnerabilitiesList
 	err = json.Unmarshal(result, &assetVulnerabilitiesList)
 
 	if err != nil {
@@ -138,7 +193,7 @@ func (c *Client) ScanDetails(id string) (*ScanDetails, error) {
 	return &scanDetails, err
 }
 
-func (c *Client) ScanDetailsWithChannel(id string, ch chan <- *ScanDetails) {
+func (c *Client) ScanDetailsWithChannel(id string, ch chan<- *ScanDetails) {
 	path := "/scans/" + id
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
@@ -195,7 +250,6 @@ func (c *Client) ListTargetGroups() (*TargetGroupsList, error) {
 	}
 	return &targetGroupList, err
 }
-
 
 func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
 	rel := &url.URL{Path: path}

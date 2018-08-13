@@ -21,7 +21,7 @@ type Credential struct{
 type AuditedAsset struct{
 	Asset				api.Asset
 	Tags				[]string
-	Vulnerabilities[]   api.AssetVulnerability
+	Vulnerabilities[]   api.Vulnerability
 	TotalRiskScore		float64
 }
 
