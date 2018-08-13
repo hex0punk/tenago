@@ -141,9 +141,9 @@ func queryScans(s *QueryState) *util.ResultTable{
 
 	for range scansList.Scans {
 		info := <-ch
-		//if Verbose{
-		//	fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
-		//}
+		if Verbose{
+			fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
+		}
 		targetsArray := strings.Split(info.ScanInfo.Targets, ",")
 		if s.IP != ""{
 			if contains(targetsArray, s.IP){
@@ -213,23 +213,27 @@ func queryAssets(s *QueryState) *util.ResultTable{
 		log.Fatal(err)
 	}
 
-	columns := []string{"Asset ID", "Members"}
+	columns := []string{"Asset ID", "Members", "Hostnames"}
 	resultTable := util.ResultTable{
 		Columns: columns,
 	}
 
 	for _, a := range assetsList.Assets{
+		hostnames := "none"
+		if a.HostnameList != nil {
+			hostnames = strings.Join(a.HostnameList, "")
+		}
 		if s.IP != ""{
 			if contains(a.IPv4List, s.IP){
 				ips := strings.Join(a.IPv4List,",")
-				row := []string{a.Id, ips}
+				row := []string{a.Id, ips, hostnames}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
 		if s.Hostname != ""{
 			if contains(a.NetbiosName, s.Hostname){
 				names := strings.Join(a.NetbiosName,",")
-				row := []string{a.Id, names}
+				row := []string{a.Id, names,  hostnames}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}

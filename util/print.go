@@ -34,9 +34,8 @@ func PrintResult(verbose bool, result *ResultTable){
 	}
 	table.SetColumnColor(rowColors...)
 
-
-	table.SetColumnColor(tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
-		tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiRedColor})
+	//table.SetColumnColor(tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
+	//	tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiRedColor})
 
 
 	table.AppendBulk(result.Rows)
