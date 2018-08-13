@@ -70,6 +70,11 @@ Find the hostname for host with IP 192.168.4.4
 tenago query -A --ip 192.168.4.4
 ```
 
+## TODO
+
+- Query assets by tags
+- Query by vulnerability
+
 
 
 
