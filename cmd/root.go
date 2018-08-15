@@ -1,24 +1,24 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"fmt"
-	"os"
-	"github.com/spf13/viper"
-	"log"
-	"runtime"
 	"errors"
+	"fmt"
 	"github.com/DharmaOfCode/tenago/api"
 	"github.com/DharmaOfCode/tenago/util"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+	"runtime"
 )
 
 var (
 	Verbose bool
 	Threads int
 	cfgFile string
-	Client *api.Client
-	config *util.Configuration
- 	rootCmd = &cobra.Command{
+	Client  *api.Client
+	config  *util.Configuration
+	rootCmd = &cobra.Command{
 		Use:   "tenago",
 		Short: "Tenago is a Tenable API go client with powerful commands.",
 		Long: `A Tenable API go client with powerful commands
@@ -32,7 +32,7 @@ var (
 		},
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			err := viper.Unmarshal(&config)
-			if Verbose{
+			if Verbose {
 				fmt.Printf("[+] Setting the application to %d threads\n", Threads)
 			}
 			runtime.GOMAXPROCS(Threads)
@@ -43,17 +43,16 @@ var (
 			Client = api.NewClient(nil, config.Credentials.AccessKey, config.Credentials.SecretKey)
 		},
 	}
-
 )
 
-func init(){
+func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the base folder where tenago is located)")
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
-	rootCmd.PersistentFlags().IntVarP(&Threads, "number of threads", "t", 10, "Number of threads (defaults to 10)")
+	rootCmd.PersistentFlags().IntVarP(&Threads, "threads", "t", 10, "Number of threads (defaults to 10)")
 }
 
-func initConfig(){
+func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)

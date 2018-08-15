@@ -37,18 +37,18 @@ var (
 				return errors.New("you need to tell me what to query (target groups or assets)")
 			}
 			if queryState.Vulnerabilities {
-				if queryState.VulnQuery.Severity != ""{
+				if queryState.VulnQuery.Severity != "" {
 					queryState.VulnQuery.Severity = strings.ToLower(queryState.VulnQuery.Severity)
 					validValues := []string{"info", "low", "medium", "high", "critical"}
 					if !stringInSlice(queryState.VulnQuery.Severity, validValues) {
 						return errors.New("invalid severity")
 					}
 				}
-				if queryState.VulnQuery.State != ""{
-					queryState.VulnQuery.State= strings.ToLower(queryState.VulnQuery.State)
-					queryState.VulnQuery.State= strings.Title(queryState.VulnQuery.State)
+				if queryState.VulnQuery.State != "" {
+					queryState.VulnQuery.State = strings.ToLower(queryState.VulnQuery.State)
+					queryState.VulnQuery.State = strings.Title(queryState.VulnQuery.State)
 					validValues := []string{"New", "Fixed", "Active", "Resurfaced"}
-					if !stringInSlice(queryState.VulnQuery.Severity, validValues) {
+					if !stringInSlice(queryState.VulnQuery.State, validValues) {
 						return errors.New("invalid severity")
 					}
 				}
@@ -70,10 +70,10 @@ func init() {
 	queryCmd.Flags().StringVar(&queryState.VulnQuery.State, "state", "", "The vulnerability state")
 	queryCmd.Flags().IntVar(&queryState.VulnQuery.DateRange, "days", 30, "The amount of days for data collection")
 
-	queryCmd.Flags().BoolVarP(&queryState.Assets, "query assets", "A", false, "Search assets")
-	queryCmd.Flags().BoolVarP(&queryState.Targets, "query target groups", "T", false, "Search target groups")
-	queryCmd.Flags().BoolVarP(&queryState.Scans, "query scans", "S", false, "Search scans by name or hostname")
-	queryCmd.Flags().BoolVarP(&queryState.Vulnerabilities, "query vulnerabilities", "V", false, "Search vulnerabilities, all or by severity")
+	queryCmd.Flags().BoolVarP(&queryState.Assets, "assets", "A", false, "Search assets")
+	queryCmd.Flags().BoolVarP(&queryState.Targets, "target-groups", "T", false, "Search target groups")
+	queryCmd.Flags().BoolVarP(&queryState.Scans, "scans", "S", false, "Search scans by name or hostname")
+	queryCmd.Flags().BoolVarP(&queryState.Vulnerabilities, "vulnerabilities", "V", false, "Search vulnerabilities, all or by severity")
 
 	rootCmd.AddCommand(queryCmd)
 }
@@ -96,7 +96,7 @@ func runQuery(cmd *cobra.Command, args []string) {
 
 func processQuery(s *QueryState) {
 	var result *util.ResultTable
-	if Verbose{
+	if Verbose {
 		fmt.Println("Preparing query...")
 	}
 
