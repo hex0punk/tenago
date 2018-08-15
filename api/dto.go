@@ -147,6 +147,17 @@ type ScanDetails struct {
 	ScanInfo ScanInfo `json:"info"`
 }
 
+type VulnQuery struct {
+	Age           int
+	Authenticated bool
+	DateRange     int
+	Exploitable   bool
+	SearchType    string
+	Resolvable    bool
+	Severity      string
+	State		  string
+}
+
 //TODO: Add the rest of the properties
 type ScanInfo struct {
 	Name      string      `json:"name"`

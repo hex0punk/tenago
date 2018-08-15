@@ -1,30 +1,28 @@
 package cmd
 
 import (
-	"strings"
-	"fmt"
-	"log"
-	"github.com/spf13/cobra"
 	"errors"
-	"github.com/DharmaOfCode/tenago/util"
+	"fmt"
 	"github.com/DharmaOfCode/tenago/api"
+	"github.com/DharmaOfCode/tenago/util"
+	"github.com/spf13/cobra"
+	"log"
+	"strings"
 	"time"
 )
 
 type QueryState struct {
-	Assets			bool
-	Targets			bool
-	Scans			bool
+	Assets          bool
+	Targets         bool
+	Scans           bool
 	Vulnerabilities bool
 
-	IP				string
-	Hostname		string
-	TargetGroup 	string
-	ScanName		string
-	Severity    	string
-	State 			string
+	IP          string
+	Hostname    string
+	TargetGroup string
+	ScanName    string
 
-	Days			int
+	VulnQuery api.VulnQuery
 }
 
 var (
@@ -35,14 +33,24 @@ var (
 		Short: "Queries assets, scans, target groups and vulnerabilities.",
 		Long:  `Queries assets, scans, target groups and vulnerabilities.`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if !queryState.Targets && !queryState.Assets && !queryState.Scans && !queryState.Vulnerabilities{
+			if !queryState.Targets && !queryState.Assets && !queryState.Scans && !queryState.Vulnerabilities {
 				return errors.New("you need to tell me what to query (target groups or assets)")
 			}
-			if queryState.Vulnerabilities && queryState.Severity != ""{
-				queryState.Severity = strings.ToLower(queryState.Severity)
-				validValues := []string{"info", "low", "medium", "high", "critical"}
-				if !stringInSlice(queryState.Severity, validValues){
-					return errors.New("invalid severity")
+			if queryState.Vulnerabilities {
+				if queryState.VulnQuery.Severity != ""{
+					queryState.VulnQuery.Severity = strings.ToLower(queryState.VulnQuery.Severity)
+					validValues := []string{"info", "low", "medium", "high", "critical"}
+					if !stringInSlice(queryState.VulnQuery.Severity, validValues) {
+						return errors.New("invalid severity")
+					}
+				}
+				if queryState.VulnQuery.State != ""{
+					queryState.VulnQuery.State= strings.ToLower(queryState.VulnQuery.State)
+					queryState.VulnQuery.State= strings.Title(queryState.VulnQuery.State)
+					validValues := []string{"New", "Fixed", "Active", "Resurfaced"}
+					if !stringInSlice(queryState.VulnQuery.Severity, validValues) {
+						return errors.New("invalid severity")
+					}
 				}
 			}
 			return nil
@@ -51,16 +59,16 @@ var (
 	}
 )
 
-
-func init(){
+func init() {
 	queryState = QueryState{}
 	queryCmd.Flags().StringVar(&queryState.IP, "ip", "", "the IP address to use in the search")
 	queryCmd.Flags().StringVar(&queryState.Hostname, "hostname", "", "The hostname to use in a search")
 	queryCmd.Flags().StringVar(&queryState.TargetGroup, "target", "", "The target group to search by")
 	queryCmd.Flags().StringVar(&queryState.ScanName, "scan", "", "The scan name to search by")
-	queryCmd.Flags().StringVar(&queryState.Severity, "severity", "", "The severity to query by")
-	queryCmd.Flags().StringVar(&queryState.State, "state", "", "The vulnerability state")
-	queryCmd.Flags().IntVar(&queryState.Days, "days", 30, "The amount of days for data collection")
+
+	queryCmd.Flags().StringVar(&queryState.VulnQuery.Severity, "severity", "", "The severity to query by")
+	queryCmd.Flags().StringVar(&queryState.VulnQuery.State, "state", "", "The vulnerability state")
+	queryCmd.Flags().IntVar(&queryState.VulnQuery.DateRange, "days", 30, "The amount of days for data collection")
 
 	queryCmd.Flags().BoolVarP(&queryState.Assets, "query assets", "A", false, "Search assets")
 	queryCmd.Flags().BoolVarP(&queryState.Targets, "query target groups", "T", false, "Search target groups")
@@ -70,17 +78,10 @@ func init(){
 	rootCmd.AddCommand(queryCmd)
 }
 
-
-func runQuery(cmd *cobra.Command, args []string){
+func runQuery(cmd *cobra.Command, args []string) {
 	valid := true
-	//if queryState.Assets || queryState.Scans || queryState.Targets{
-	//	if queryState.IP == "" && queryState.Hostname == "" && queryState.TargetGroup == "" && queryState.ScanName == "" {
-	//		fmt.Println("[!] You must specifiy a value for either a target group, scan or asset")
-	//		valid = false
-	//	}
-	//}
 
-	if queryState.Assets && queryState.TargetGroup != ""{
+	if queryState.Assets && queryState.TargetGroup != "" {
 		fmt.Println("[!] You cannot query assets by target groups")
 		valid = false
 	}
@@ -93,55 +94,49 @@ func runQuery(cmd *cobra.Command, args []string){
 	}
 }
 
-func processQuery(s *QueryState){
+func processQuery(s *QueryState) {
 	var result *util.ResultTable
-	fmt.Println("Preparing query...")
+	if Verbose{
+		fmt.Println("Preparing query...")
+	}
+
 	if s.Targets {
-		fmt.Println("Querying targets")
 		result = queryTargets(s)
 	}
 
 	if s.Assets {
-		fmt.Println("Querying assets")
 		result = queryAssets(s)
 	}
 
-	if s.Scans  {
-		fmt.Println("Querying scans")
+	if s.Scans {
 		result = queryScans(s)
 	}
 
 	if s.Vulnerabilities {
-		fmt.Println("Calling vulns")
 		result = queryVulnerabilities(s)
 	}
 
-	if s.Assets && (s.IP == "" && s.Hostname == "" && s.TargetGroup == ""){
-		fmt.Println("Querying all assets")
+	if s.Assets && (s.IP == "" && s.Hostname == "" && s.TargetGroup == "") {
 		result = getAllAssets(s)
 	}
 
-	if s.Targets && (s.IP == "" && s.Hostname == "" && s.TargetGroup == ""){
-		fmt.Println("Querying all targets")
+	if s.Targets && (s.IP == "" && s.Hostname == "" && s.TargetGroup == "") {
 		result = getAllTargets(s)
 	}
-	fmt.Println("Printing results")
 	util.PrintResult(Verbose, result)
 }
 
-func queryVulnerabilities(s *QueryState)  *util.ResultTable{
+func queryVulnerabilities(s *QueryState) *util.ResultTable {
 	start := time.Now()
 	var vulns *api.VulnerabilitiesList
 	var err error
-	if s.Severity != ""{
-		fmt.Println(s.Severity)
-		sev, err := api.ToSeverity(s.Severity)
+	if s.VulnQuery.Severity != "" {
 		if err != nil {
 			log.Fatal(err)
 		}
-		vulns, err = Client.ListVulnerabilitiesBySeverity(sev, s.State, s.Days)
+		vulns, err = Client.ListVulnerabilitiesBySeverity(s.VulnQuery)
 	} else {
-		vulns, err = Client.ListVulnerabilities(s.Days)
+		vulns, err = Client.ListVulnerabilities(s.VulnQuery.DateRange)
 	}
 
 	if err != nil {
@@ -153,21 +148,21 @@ func queryVulnerabilities(s *QueryState)  *util.ResultTable{
 		Columns: columns,
 	}
 
-	if vulns == nil{
+	if vulns == nil {
 		return &resultTable
 	}
 	var count int64 = 0
-	for _, v := range vulns.Vulnerabilities{
-		row := []string{string(v.PluginId) ,v.PluginName, v.Severity.String(), string(v.Count), v.VulnerabilityState}
+	for _, v := range vulns.Vulnerabilities {
+		row := []string{string(v.PluginId), v.PluginName, v.Severity.String(), string(v.Count), v.VulnerabilityState}
 		resultTable.Rows = append(resultTable.Rows, row)
 		c, err := v.Count.Int64()
-		if err != nil{
+		if err != nil {
 			log.Fatal(err)
 		}
 		count += c
 	}
 
-	if Verbose{
+	if Verbose {
 		util.PrintRuler(Verbose)
 		fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 
@@ -179,7 +174,7 @@ func queryVulnerabilities(s *QueryState)  *util.ResultTable{
 	return &resultTable
 }
 
-func queryScans(s *QueryState) *util.ResultTable{
+func queryScans(s *QueryState) *util.ResultTable {
 	start := time.Now()
 	scansList, err := Client.ListScans()
 	if err != nil {
@@ -191,7 +186,6 @@ func queryScans(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-
 	ch := make(chan *api.ScanDetails)
 	for _, scan := range scansList.Scans {
 		if s.ScanName != "" {
@@ -199,7 +193,7 @@ func queryScans(s *QueryState) *util.ResultTable{
 			lTerm := strings.ToLower(s.ScanName)
 
 			if strings.Contains(lName, lTerm) {
-				if Verbose{
+				if Verbose {
 					fmt.Println("[+] Getting details for scan " + scan.Name)
 				}
 				info, err := Client.ScanDetails(string(scan.Id))
@@ -210,7 +204,7 @@ func queryScans(s *QueryState) *util.ResultTable{
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		} else {
-			if Verbose{
+			if Verbose {
 				fmt.Println("[+] Getting details for scan " + scan.Name)
 			}
 			go Client.ScanDetailsWithChannel(string(scan.Id), ch)
@@ -219,25 +213,25 @@ func queryScans(s *QueryState) *util.ResultTable{
 
 	for range scansList.Scans {
 		info := <-ch
-		if Verbose{
+		if Verbose {
 			fmt.Println("[+] Received data for scan " + info.ScanInfo.Name)
 		}
 		targetsArray := strings.Split(info.ScanInfo.Targets, ",")
-		if s.IP != ""{
-			if contains(targetsArray, s.IP){
+		if s.IP != "" {
+			if contains(targetsArray, s.IP) {
 				row := []string{info.ScanInfo.Name, info.ScanInfo.Targets}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
-		if s.Hostname != ""{
-			if contains(targetsArray, s.Hostname){
+		if s.Hostname != "" {
+			if contains(targetsArray, s.Hostname) {
 				row := []string{info.ScanInfo.Name, info.ScanInfo.Targets}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
 	}
 
-	if Verbose{
+	if Verbose {
 		util.PrintRuler(Verbose)
 		fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 	}
@@ -245,7 +239,7 @@ func queryScans(s *QueryState) *util.ResultTable{
 	return &resultTable
 }
 
-func queryTargets(s *QueryState) *util.ResultTable{
+func queryTargets(s *QueryState) *util.ResultTable {
 	targetGroupsList, err := Client.ListTargetGroups()
 	if err != nil {
 		log.Fatal(err)
@@ -256,9 +250,9 @@ func queryTargets(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-	for _, t := range targetGroupsList.TargetGroups{
+	for _, t := range targetGroupsList.TargetGroups {
 		membersArray := strings.Split(t.Members, ",")
-		if s.TargetGroup != ""{
+		if s.TargetGroup != "" {
 			lName := strings.ToLower(t.Name)
 			lTerm := strings.ToLower(s.TargetGroup)
 
@@ -267,14 +261,14 @@ func queryTargets(s *QueryState) *util.ResultTable{
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
-		if s.IP != ""{
-			if contains(membersArray, s.IP){
+		if s.IP != "" {
+			if contains(membersArray, s.IP) {
 				row := []string{t.Name, t.Members}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
-		if s.Hostname != ""{
-			if contains(membersArray, s.Hostname){
+		if s.Hostname != "" {
+			if contains(membersArray, s.Hostname) {
 				row := []string{t.Name, t.Members}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
@@ -284,7 +278,7 @@ func queryTargets(s *QueryState) *util.ResultTable{
 	return &resultTable
 }
 
-func queryAssets(s *QueryState) *util.ResultTable{
+func queryAssets(s *QueryState) *util.ResultTable {
 	assetsList, err := Client.ListAssets()
 
 	if err != nil {
@@ -296,22 +290,22 @@ func queryAssets(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-	for _, a := range assetsList.Assets{
+	for _, a := range assetsList.Assets {
 		hostnames := "none"
 		if a.HostnameList != nil {
 			hostnames = strings.Join(a.HostnameList, "")
 		}
-		if s.IP != ""{
-			if contains(a.IPv4List, s.IP){
-				ips := strings.Join(a.IPv4List,",")
+		if s.IP != "" {
+			if contains(a.IPv4List, s.IP) {
+				ips := strings.Join(a.IPv4List, ",")
 				row := []string{a.Id, ips, hostnames}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
-		if s.Hostname != ""{
-			if contains(a.NetbiosName, s.Hostname){
-				names := strings.Join(a.NetbiosName,",")
-				row := []string{a.Id, names,  hostnames}
+		if s.Hostname != "" {
+			if contains(a.NetbiosName, s.Hostname) {
+				names := strings.Join(a.NetbiosName, ",")
+				row := []string{a.Id, names, hostnames}
 				resultTable.Rows = append(resultTable.Rows, row)
 			}
 		}
@@ -320,8 +314,7 @@ func queryAssets(s *QueryState) *util.ResultTable{
 	return &resultTable
 }
 
-
-func getAllAssets(s *QueryState) *util.ResultTable{
+func getAllAssets(s *QueryState) *util.ResultTable {
 	assetsList, err := Client.ListAssets()
 
 	if err != nil {
@@ -333,9 +326,9 @@ func getAllAssets(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-	for _, a := range assetsList.Assets{
+	for _, a := range assetsList.Assets {
 		var name string
-		if len(a.NetbiosName) > 0{
+		if len(a.NetbiosName) > 0 {
 			name = a.NetbiosName[0]
 		} else {
 			name = a.IPv4List[0]
@@ -347,7 +340,7 @@ func getAllAssets(s *QueryState) *util.ResultTable{
 	return &resultTable
 }
 
-func getAllTargets(s *QueryState) *util.ResultTable{
+func getAllTargets(s *QueryState) *util.ResultTable {
 	targetGroupsList, err := Client.ListTargetGroups()
 
 	if err != nil {
@@ -359,14 +352,13 @@ func getAllTargets(s *QueryState) *util.ResultTable{
 		Columns: columns,
 	}
 
-	for _, t := range targetGroupsList.TargetGroups{
+	for _, t := range targetGroupsList.TargetGroups {
 		row := []string{t.Name, t.Members}
 		resultTable.Rows = append(resultTable.Rows, row)
 	}
 
 	return &resultTable
 }
-
 
 func contains(s []string, e string) bool {
 	for _, a := range s {

@@ -15,7 +15,7 @@ func PrintResult(verbose bool, result *ResultTable){
 	table.SetBorder(false)
 
 	var headerColors []tablewriter.Colors
-	for i, _ := range result.Columns{
+	for i := range result.Columns{
 		if i == 0{
 			headerColors = append(headerColors, tablewriter.Colors{tablewriter.Bold, tablewriter.BgGreenColor})
 		} else {
@@ -25,7 +25,7 @@ func PrintResult(verbose bool, result *ResultTable){
 	table.SetHeaderColor(headerColors...)
 
 	var rowColors []tablewriter.Colors
-	for i, _ := range result.Columns{
+	for i := range result.Columns{
 		if i == 0{
 			rowColors = append(rowColors, tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiCyanColor})
 		} else {

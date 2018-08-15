@@ -79,7 +79,7 @@ func (c *Client) ListVulnerabilities(days int)(*VulnerabilitiesList, error) {
 	return &assetVulnerabilitiesList, err
 }
 
-func (c *Client) ListVulnerabilitiesBySeverity(severity Severity, state string, days int)(*VulnerabilitiesList, error) {
+func (c *Client) ListVulnerabilitiesBySeverity(query VulnQuery)(*VulnerabilitiesList, error) {
 	path := "/workbenches/vulnerabilities"
 	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
@@ -87,13 +87,13 @@ func (c *Client) ListVulnerabilitiesBySeverity(severity Severity, state string, 
 	}
 
 	q := req.URL.Query()
-	q.Add("severity", severity.String())
-	q.Add("date_range", strconv.Itoa(days))
+	q.Add("severity", query.Severity)
+	q.Add("date_range", strconv.Itoa(query.DateRange))
 
-	if (state != ""){
-		q.Add("filter.1.quality", "eq")
+	if (query.State != ""){
 		q.Add("filter.1.filter", "tracking.state")
-		q.Add("filter.1.value", state)
+		q.Add("filter.1.quality", "eq")
+		q.Add("filter.1.value", query.State)
 	}
 
 	req.URL.RawQuery = q.Encode()

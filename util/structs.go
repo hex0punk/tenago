@@ -24,4 +24,3 @@ type AuditedAsset struct{
 	Vulnerabilities[]   api.Vulnerability
 	TotalRiskScore		float64
 }
-
