@@ -7,6 +7,7 @@ import (
 type ResultTable struct {
 	Rows			[][]string
 	Columns			[]string
+	Footer			string
 }
 
 type Configuration struct {

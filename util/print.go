@@ -4,6 +4,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"os"
 	"fmt"
+	"github.com/fatih/color"
 )
 
 
@@ -34,16 +35,24 @@ func PrintResult(verbose bool, result *ResultTable){
 	}
 	table.SetColumnColor(rowColors...)
 
-	//table.SetColumnColor(tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiBlackColor},
-	//	tablewriter.Colors{tablewriter.Bold, tablewriter.FgHiRedColor})
-
+	//TODO: update footer so it can contain keys and values
+	//table.SetFooter([]string{"", "", "Total", "$146.93"}) // Add Footer
+	//table.SetFooterColor(tablewriter.Colors{}, tablewriter.Colors{},
+	//	tablewriter.Colors{tablewriter.Bold},
+	//	tablewriter.Colors{tablewriter.FgHiRedColor})
 
 	table.AppendBulk(result.Rows)
 	table.Render()
 
-	if (verbose){
+	if result.Footer != ""{
+		c := color.New(color.FgMagenta).Add(color.Underline)
 		PrintRuler(true)
-		fmt.Printf("Total records: %d\n", len(result.Rows))
+		c.Println(result.Footer)
+		PrintRuler(true)
+	}
+
+	if verbose{
+		fmt.Printf("[+] Total records: %d\n", len(result.Rows))
 		PrintRuler(true)
 	}
 }

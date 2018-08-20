@@ -97,7 +97,7 @@ func runQuery(cmd *cobra.Command, args []string) {
 func processQuery(s *QueryState) {
 	var result *util.ResultTable
 	if Verbose {
-		fmt.Println("Preparing query...")
+		fmt.Println("[+] Preparing query...")
 	}
 
 	if s.Targets {
@@ -130,11 +130,8 @@ func queryVulnerabilities(s *QueryState) *util.ResultTable {
 	start := time.Now()
 	var vulns *api.VulnerabilitiesList
 	var err error
-	if s.VulnQuery.Severity != "" {
-		if err != nil {
-			log.Fatal(err)
-		}
-		vulns, err = Client.ListVulnerabilitiesBySeverity(s.VulnQuery)
+	if s.VulnQuery.Severity != "" || s.VulnQuery.State != "" {
+		vulns, err = Client.ListVulnerabilitiesWithQuery(s.VulnQuery)
 	} else {
 		vulns, err = Client.ListVulnerabilities(s.VulnQuery.DateRange)
 	}
@@ -162,14 +159,8 @@ func queryVulnerabilities(s *QueryState) *util.ResultTable {
 		count += c
 	}
 
-	if Verbose {
-		util.PrintRuler(Verbose)
-		fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
-
-		util.PrintRuler(Verbose)
-		fmt.Printf("Found a total of %d vulnerabilities\n", count)
-		util.PrintRuler(Verbose)
-	}
+	resultTable.Footer = fmt.Sprintf("[+] %.2fs elapsed\n", time.Since(start).Seconds())
+	resultTable.Footer += fmt.Sprintf("[+] Found a total of %d vulnerabilities", count)
 
 	return &resultTable
 }
